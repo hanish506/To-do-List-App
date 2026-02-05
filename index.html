@@ -22,9 +22,7 @@ body {
   box-shadow: 0 5px 15px rgba(0,0,0,0.15);
 }
 
-h2 {
-  text-align: center;
-}
+h2 { text-align: center; }
 
 input, select, button {
   padding: 8px;
@@ -39,9 +37,7 @@ button {
   border: none;
 }
 
-button:hover {
-  background: #0056b3;
-}
+button:hover { background: #0056b3; }
 
 .task {
   display: flex;
@@ -49,6 +45,7 @@ button:hover {
   align-items: center;
   padding: 8px;
   border-bottom: 1px solid #ddd;
+  cursor: grab;
 }
 
 .task.completed span {
@@ -73,13 +70,11 @@ button:hover {
   background: #dc3545;
 }
 
-.actions button.complete {
-  background: #28a745;
-}
+.actions button.complete { background: #28a745; }
 
 .filters {
   display: flex;
-  justify-content: space-between;
+  gap: 5px;
   margin: 10px 0;
 }
 
@@ -121,6 +116,7 @@ button:hover {
   <button onclick="filterTasks('all')">All</button>
   <button onclick="filterTasks('completed')">Completed</button>
   <button onclick="filterTasks('pending')">Pending</button>
+  <button onclick="exportCSV()">Export CSV</button>
 </div>
 
 <ul id="taskList"></ul>
@@ -130,6 +126,7 @@ button:hover {
 
 <script>
 let tasks = JSON.parse(localStorage.getItem("tasks")) || [];
+let dragStartIndex = null;
 
 function saveTasks() {
   localStorage.setItem("tasks", JSON.stringify(tasks));
@@ -162,6 +159,8 @@ function renderTasks(filter = "all") {
 
     const li = document.createElement("li");
     li.className = `task ${task.completed ? "completed" : ""}`;
+    li.draggable = true;
+    li.dataset.index = index;
 
     li.innerHTML = `
       <span>
@@ -178,6 +177,30 @@ function renderTasks(filter = "all") {
   });
 
   updateCounter();
+}
+
+/* Drag & Drop Logic */
+taskList.addEventListener("dragstart", e => {
+  if (!e.target.classList.contains("task")) return;
+  dragStartIndex = +e.target.dataset.index;
+});
+
+taskList.addEventListener("dragover", e => e.preventDefault());
+
+taskList.addEventListener("drop", e => {
+  const taskEl = e.target.closest(".task");
+  if (!taskEl) return;
+
+  const dragEndIndex = +taskEl.dataset.index;
+  reorderTasks(dragStartIndex, dragEndIndex);
+  saveTasks();
+  renderTasks();
+});
+
+function reorderTasks(from, to) {
+  if (from === to) return;
+  const moved = tasks.splice(from, 1)[0];
+  tasks.splice(to, 0, moved);
 }
 
 function toggleTask(index) {
@@ -199,6 +222,24 @@ function filterTasks(type) {
 function updateCounter() {
   const completed = tasks.filter(t => t.completed).length;
   counter.textContent = `Total: ${tasks.length} | Completed: ${completed}`;
+}
+
+/* Export CSV */
+function exportCSV() {
+  let csv = "Task,Tag,Priority,Completed\n";
+  tasks.forEach(task => {
+    csv += `"${task.text}","${task.tag}","${task.priority}","${task.completed}"\n`;
+  });
+
+  const blob = new Blob([csv], { type: "text/csv" });
+  const url = URL.createObjectURL(blob);
+
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "todo_tasks.csv";
+  a.click();
+
+  URL.revokeObjectURL(url);
 }
 
 renderTasks();
