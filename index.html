@@ -2,16 +2,22 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Advanced To-Do App</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>To-Do List App</title>
 
 <style>
+/* ===== CSS ===== */
+* {
+  box-sizing: border-box;
+}
+
 body {
   font-family: Arial, sans-serif;
   background: #eef2f3;
   display: flex;
   justify-content: center;
   align-items: center;
-  height: 100vh;
+  min-height: 100vh;
 }
 
 .app {
@@ -19,156 +25,186 @@ body {
   background: #fff;
   padding: 20px;
   border-radius: 10px;
-  box-shadow: 0 5px 15px rgba(0,0,0,0.15);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.15);
 }
 
-h2 { text-align: center; }
-
-input, select, button {
-  padding: 8px;
-  margin: 5px 0;
-  width: 100%;
+h2 {
+  text-align: center;
+  margin-bottom: 15px;
 }
 
-button {
-  cursor: pointer;
-  background: #007bff;
+/* Input area */
+.input-area {
+  display: flex;
+  gap: 10px;
+}
+
+.input-area input {
+  flex: 1;
+  padding: 10px;
+}
+
+.input-area button {
+  padding: 10px 15px;
+  background: #4CAF50;
   color: #fff;
   border: none;
+  cursor: pointer;
+  border-radius: 5px;
 }
 
-button:hover { background: #0056b3; }
+/* Counter */
+.counter {
+  display: flex;
+  justify-content: space-between;
+  margin: 12px 0;
+  font-size: 14px;
+}
 
-.task {
+/* Task list */
+ul {
+  list-style: none;
+  padding: 0;
+}
+
+li {
+  background: #f1f1f1;
+  padding: 10px;
+  margin-bottom: 8px;
+  border-radius: 6px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 8px;
-  border-bottom: 1px solid #ddd;
   cursor: grab;
 }
 
-.task.completed span {
+li.completed {
   text-decoration: line-through;
-  color: gray;
+  opacity: 0.6;
 }
-
-.tag {
-  font-size: 12px;
-  padding: 2px 6px;
-  border-radius: 4px;
-  background: #eee;
-  margin-left: 5px;
-}
-
-.high { background: #ffcccc; }
-.medium { background: #fff0b3; }
-.low { background: #d4edda; }
 
 .actions button {
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 16px;
   margin-left: 5px;
-  background: #dc3545;
 }
 
-.actions button.complete { background: #28a745; }
+/* 📱 Mobile Responsive */
+@media (max-width: 480px) {
+  .app {
+    width: 95%;
+  }
 
-.filters {
-  display: flex;
-  gap: 5px;
-  margin: 10px 0;
-}
-
-.counter {
-  text-align: center;
-  font-size: 14px;
+  .counter {
+    flex-direction: column;
+    text-align: center;
+    gap: 5px;
+  }
 }
 </style>
 </head>
 
 <body>
+
 <div class="app">
-<h2>Advanced To-Do App</h2>
+  <h2>📝 To-Do List App</h2>
 
-<input type="text" id="taskText" placeholder="Enter task">
+  <!-- Input -->
+  <div class="input-area">
+    <input type="text" id="taskInput" placeholder="Enter task">
+    <button onclick="addTask()">Add</button>
+  </div>
 
-<select id="taskTag">
-  <option>Work</option>
-  <option>Study</option>
-  <option>Personal</option>
-  <option>Health</option>
-  <option>Fitness</option>
-  <option>Shopping</option>
-  <option>Coding</option>
-  <option>Reading</option>
-  <option>Project</option>
-  <option>Urgent</option>
-</select>
+  <!-- Counter -->
+  <div class="counter">
+    <span>Total: <b id="total">0</b></span>
+    <span>Completed: <b id="completed">0</b></span>
+    <span>Pending: <b id="pending">0</b></span>
+  </div>
 
-<select id="taskPriority">
-  <option value="low">Low Priority</option>
-  <option value="medium">Medium Priority</option>
-  <option value="high">High Priority</option>
-</select>
-
-<button onclick="addTask()">Add Task</button>
-
-<div class="filters">
-  <button onclick="filterTasks('all')">All</button>
-  <button onclick="filterTasks('completed')">Completed</button>
-  <button onclick="filterTasks('pending')">Pending</button>
-  <button onclick="exportCSV()">Export CSV</button>
-</div>
-
-<ul id="taskList"></ul>
-
-<div class="counter" id="counter"></div>
+  <!-- Task List -->
+  <ul id="taskList"></ul>
 </div>
 
 <script>
-let tasks = JSON.parse(localStorage.getItem("tasks")) || [];
-let dragStartIndex = null;
+/* ===== JAVASCRIPT ===== */
 
+// Store tasks
+let tasks = JSON.parse(localStorage.getItem("tasks")) || [];
+let draggedIndex = null;
+
+// Save tasks to localStorage
 function saveTasks() {
   localStorage.setItem("tasks", JSON.stringify(tasks));
 }
 
+// Update task counter
+function updateCounter() {
+  total.textContent = tasks.length;
+  completed.textContent = tasks.filter(t => t.completed).length;
+  pending.textContent = tasks.filter(t => !t.completed).length;
+}
+
+// Add task
 function addTask() {
-  const text = taskText.value.trim();
-  if (!text) return;
+  const text = taskInput.value.trim();
+  if (text === "") {
+    alert("Please enter a task");
+    return;
+  }
 
-  tasks.push({
-    text,
-    tag: taskTag.value,
-    priority: taskPriority.value,
-    completed: false
-  });
-
-  taskText.value = "";
+  tasks.push({ text: text, completed: false });
+  taskInput.value = "";
   saveTasks();
   renderTasks();
 }
 
-function renderTasks(filter = "all") {
+// Mark task completed
+function toggleTask(index) {
+  tasks[index].completed = !tasks[index].completed;
+  saveTasks();
+  renderTasks();
+}
+
+// Delete task
+function deleteTask(index) {
+  tasks.splice(index, 1);
+  saveTasks();
+  renderTasks();
+}
+
+/* 🧩 Drag & Drop */
+function dragStart(index) {
+  draggedIndex = index;
+}
+
+function dropTask(index) {
+  const draggedTask = tasks[draggedIndex];
+  tasks.splice(draggedIndex, 1);
+  tasks.splice(index, 0, draggedTask);
+  saveTasks();
+  renderTasks();
+}
+
+// Display tasks
+function renderTasks() {
   taskList.innerHTML = "";
 
   tasks.forEach((task, index) => {
-    if (
-      (filter === "completed" && !task.completed) ||
-      (filter === "pending" && task.completed)
-    ) return;
-
     const li = document.createElement("li");
-    li.className = `task ${task.completed ? "completed" : ""}`;
     li.draggable = true;
-    li.dataset.index = index;
+    li.className = task.completed ? "completed" : "";
+
+    li.ondragstart = () => dragStart(index);
+    li.ondragover = e => e.preventDefault();
+    li.ondrop = () => dropTask(index);
 
     li.innerHTML = `
-      <span>
-        ${task.text}
-        <span class="tag ${task.priority}">${task.tag}</span>
-      </span>
+      <span onclick="toggleTask(${index})">${task.text}</span>
       <div class="actions">
-        <button class="complete" onclick="toggleTask(${index})">✔</button>
+        <button onclick="toggleTask(${index})">✔</button>
         <button onclick="deleteTask(${index})">🗑</button>
       </div>
     `;
@@ -179,69 +215,7 @@ function renderTasks(filter = "all") {
   updateCounter();
 }
 
-/* Drag & Drop Logic */
-taskList.addEventListener("dragstart", e => {
-  if (!e.target.classList.contains("task")) return;
-  dragStartIndex = +e.target.dataset.index;
-});
-
-taskList.addEventListener("dragover", e => e.preventDefault());
-
-taskList.addEventListener("drop", e => {
-  const taskEl = e.target.closest(".task");
-  if (!taskEl) return;
-
-  const dragEndIndex = +taskEl.dataset.index;
-  reorderTasks(dragStartIndex, dragEndIndex);
-  saveTasks();
-  renderTasks();
-});
-
-function reorderTasks(from, to) {
-  if (from === to) return;
-  const moved = tasks.splice(from, 1)[0];
-  tasks.splice(to, 0, moved);
-}
-
-function toggleTask(index) {
-  tasks[index].completed = !tasks[index].completed;
-  saveTasks();
-  renderTasks();
-}
-
-function deleteTask(index) {
-  tasks.splice(index, 1);
-  saveTasks();
-  renderTasks();
-}
-
-function filterTasks(type) {
-  renderTasks(type);
-}
-
-function updateCounter() {
-  const completed = tasks.filter(t => t.completed).length;
-  counter.textContent = `Total: ${tasks.length} | Completed: ${completed}`;
-}
-
-/* Export CSV */
-function exportCSV() {
-  let csv = "Task,Tag,Priority,Completed\n";
-  tasks.forEach(task => {
-    csv += `"${task.text}","${task.tag}","${task.priority}","${task.completed}"\n`;
-  });
-
-  const blob = new Blob([csv], { type: "text/csv" });
-  const url = URL.createObjectURL(blob);
-
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = "todo_tasks.csv";
-  a.click();
-
-  URL.revokeObjectURL(url);
-}
-
+// Load saved tasks
 renderTasks();
 </script>
 
