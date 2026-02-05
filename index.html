@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Advanced To-Do App</title>
+
+<style>
+body {
+  font-family: Arial, sans-serif;
+  background: #eef2f3;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+}
+
+.app {
+  width: 420px;
+  background: #fff;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.15);
+}
+
+h2 {
+  text-align: center;
+}
+
+input, select, button {
+  padding: 8px;
+  margin: 5px 0;
+  width: 100%;
+}
+
+button {
+  cursor: pointer;
+  background: #007bff;
+  color: #fff;
+  border: none;
+}
+
+button:hover {
+  background: #0056b3;
+}
+
+.task {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px;
+  border-bottom: 1px solid #ddd;
+}
+
+.task.completed span {
+  text-decoration: line-through;
+  color: gray;
+}
+
+.tag {
+  font-size: 12px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: #eee;
+  margin-left: 5px;
+}
+
+.high { background: #ffcccc; }
+.medium { background: #fff0b3; }
+.low { background: #d4edda; }
+
+.actions button {
+  margin-left: 5px;
+  background: #dc3545;
+}
+
+.actions button.complete {
+  background: #28a745;
+}
+
+.filters {
+  display: flex;
+  justify-content: space-between;
+  margin: 10px 0;
+}
+
+.counter {
+  text-align: center;
+  font-size: 14px;
+}
+</style>
+</head>
+
+<body>
+<div class="app">
+<h2>Advanced To-Do App</h2>
+
+<input type="text" id="taskText" placeholder="Enter task">
+
+<select id="taskTag">
+  <option>Work</option>
+  <option>Study</option>
+  <option>Personal</option>
+  <option>Health</option>
+  <option>Fitness</option>
+  <option>Shopping</option>
+  <option>Coding</option>
+  <option>Reading</option>
+  <option>Project</option>
+  <option>Urgent</option>
+</select>
+
+<select id="taskPriority">
+  <option value="low">Low Priority</option>
+  <option value="medium">Medium Priority</option>
+  <option value="high">High Priority</option>
+</select>
+
+<button onclick="addTask()">Add Task</button>
+
+<div class="filters">
+  <button onclick="filterTasks('all')">All</button>
+  <button onclick="filterTasks('completed')">Completed</button>
+  <button onclick="filterTasks('pending')">Pending</button>
+</div>
+
+<ul id="taskList"></ul>
+
+<div class="counter" id="counter"></div>
+</div>
+
+<script>
+let tasks = JSON.parse(localStorage.getItem("tasks")) || [];
+
+function saveTasks() {
+  localStorage.setItem("tasks", JSON.stringify(tasks));
+}
+
+function addTask() {
+  const text = taskText.value.trim();
+  if (!text) return;
+
+  tasks.push({
+    text,
+    tag: taskTag.value,
+    priority: taskPriority.value,
+    completed: false
+  });
+
+  taskText.value = "";
+  saveTasks();
+  renderTasks();
+}
+
+function renderTasks(filter = "all") {
+  taskList.innerHTML = "";
+
+  tasks.forEach((task, index) => {
+    if (
+      (filter === "completed" && !task.completed) ||
+      (filter === "pending" && task.completed)
+    ) return;
+
+    const li = document.createElement("li");
+    li.className = `task ${task.completed ? "completed" : ""}`;
+
+    li.innerHTML = `
+      <span>
+        ${task.text}
+        <span class="tag ${task.priority}">${task.tag}</span>
+      </span>
+      <div class="actions">
+        <button class="complete" onclick="toggleTask(${index})">✔</button>
+        <button onclick="deleteTask(${index})">🗑</button>
+      </div>
+    `;
+
+    taskList.appendChild(li);
+  });
+
+  updateCounter();
+}
+
+function toggleTask(index) {
+  tasks[index].completed = !tasks[index].completed;
+  saveTasks();
+  renderTasks();
+}
+
+function deleteTask(index) {
+  tasks.splice(index, 1);
+  saveTasks();
+  renderTasks();
+}
+
+function filterTasks(type) {
+  renderTasks(type);
+}
+
+function updateCounter() {
+  const completed = tasks.filter(t => t.completed).length;
+  counter.textContent = `Total: ${tasks.length} | Completed: ${completed}`;
+}
+
+renderTasks();
+</script>
+
+</body>
+</html>
